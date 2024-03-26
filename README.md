@@ -1,0 +1,1 @@
+# Resolution-procedure-in-predicate-logic
