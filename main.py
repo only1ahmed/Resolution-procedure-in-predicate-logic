@@ -165,17 +165,81 @@ def move_quantifiers_left(root):
         
     return new_root
     
+def set_all_parents(root):
+    if root.type == "Quant":
+        root.var.parents.append(root)
+
+    for branch in root.children:
+        if type(branch) == Atom:
+            branch.parents.append(root)
+        else:
+            branch.parent = root
+            set_all_parents(branch)
+
+
+def collect_atoms(root, list_of_atoms):
+    if type(root) == Atom:
+        list_of_atoms.append(root)
+        return
+    if root.type == "Quant":
+        list_of_atoms.append(root.var)
+
+    for branch in root.children:
+        collect_atoms(branch, list_of_atoms)
+
+def replace_atom_with(root, atom, constant):
+    if type(root) == Atom:
+        if root.name == atom.name:
+            return constant
+        return root
+    for i in range(len(root.children)):
+        root.children[i] = replace_atom_with(root.children[i], atom, constant)
+    return root
 
 
 # Skolemization // Quant
+def skolemization(root):
+    CONSTANT_NO_NAME = 0
+    CONSTANT_PREDICATE = 0
+
+    set_all_parents(root)
+    
+    list_of_atoms = []
+    list_of_quantifiers = []
+    
+    collect_atoms(root, list_of_atoms)
+    collect_quantifiers(root, list_of_quantifiers)
+
+    list_of_atoms.sort(key=lambda atom: atom.name)
+    
+    universal_flag = False
+    list_of_variables = set()
+    for i in range(len(list_of_quantifiers)):
+        if list_of_quantifiers[i].name == "∀":
+            list_of_variables.add(list_of_quantifiers[i].var.name)
+            universal_flag = True
+        
+        if universal_flag:
+            if list_of_quantifiers[i].name == "∃":
+                new_atoms = []
+                for atom in list_of_atoms:
+                    if atom.name not in list_of_variables:
+                        new_atoms.append(Atom(atom.name, False))
+                new_predicate = Node('F'+ str(CONSTANT_PREDICATE), children=new_atoms)
+                CONSTANT_PREDICATE += 1
+                root = replace_atom_with(root, list_of_quantifiers[i].var, new_predicate)
+
+        else:
+            if list_of_quantifiers[i].name == "∃":
+                new_constant_atom = Atom("CONST" + str(CONSTANT_NO_NAME), True)
+                CONSTANT_NO_NAME += 1
+                root = replace_atom_with(root, list_of_quantifiers[i].var, new_constant_atom)
 
 
-def skolemization(T):
-    pass
 # Drop universal quantifiers // Quant
 
 
-def drop_universal_quantifiers(T, parent=None):
+def drop_universal_quantifiers(root, parent=None):
     # if type(T) is Quant:
     #     if T.name == "∀":
     #         T.name = ""
@@ -233,6 +297,7 @@ def print_children(root):
 def main():
     knowledge_base = []
 
+    
     # Example: ∀x(¬(T(x) → ¬M(x)))
     x = Atom("x", False)
     T = Node("T", children=[x])
@@ -246,19 +311,14 @@ def main():
     knowledge_base.append(first_sentence)
 
     # (∀x p(x)) v (∃x q(x))
+    x = Atom("x", False)
+    P = Node("P", children=[x])
+    Q = Node("Q", children=[x])
 
-    # x = Atom("x", False)
-    # y = Atom("y", False)
+    left_or_right = Node("V", children=[Node("∀", x, children=[P]), Node("∃", x, children=[Q])])
 
-    # P = Node("P", children=[x])
-    # Q = Node("Q", children=[x])
-    # left = Node("∀", x, children=[P])
-    # right = Node("∧", children=[
-    #              P, Node("Q", children=[y])])
-    # right = Node("∃", x, children=[right])
-    # right = Node("∃", y, children=[right])
-    # left_or_right = Node("V", children=[left, right])
-    # knowledge_base.append(left_or_right)
+    
+    knowledge_base.append(left_or_right)
 
     # print(knowledge_base.var.name)
     # print(convert_to_cnf(knowledge_base))
@@ -266,26 +326,9 @@ def main():
     move_negations_inside(knowledge_base[1])
     standardize_variables(knowledge_base[1])
     knowledge_base[1] = move_quantifiers_left(knowledge_base[1])
+    skolemization(knowledge_base[1])
     print_children(knowledge_base[1])
-    # print_children(left_or_right)
-    # drop_universal_quantifiers(knowledge_base[0])
-    # print_children([knowledge_base[0]])
-    # print_children(knowledge_base)
-    x = Atom("x", False)
-    y = Atom("y", False)
-    z = Atom("z", False)
-    P = Node("P", children=[x])
-    Q = Node("Q", children=[y])
-    U = Node("U", children=[z])
 
-    # Define conjunction Q(y) ^ U(z)
-    conjunction = Node("∧", children=[Q, U])
-
-    # Define disjunction P(x) v (Q(y) ^ U(z))
-    disjunction = Node("V", children=[P, conjunction])
-    distribute(disjunction)
-    # Print the tree structure
-    print_children(disjunction)
 
 
 # Run
