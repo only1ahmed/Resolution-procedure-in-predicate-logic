@@ -283,9 +283,6 @@ def distribute(root):
             distribute(child)
 
 
-def convert_to_cnf(T):
-
-    pass
 
 
 def generate_random_string(n):
@@ -309,6 +306,18 @@ def print_children(root):
         if type(branch) == Node:
             print_children(branch)
 
+def convert_to_cnf(KB):
+    cnf = []
+    for sentence in KB:
+        eliminate_implication(sentence)
+        move_negations_inside(sentence)
+        standardize_variables(sentence)
+        sentence = move_quantifiers_left(sentence)
+        skolemization(sentence)
+        sentence = drop_universal_quantifiers(sentence)
+        distribute(sentence)
+        cnf.append(sentence)
+    return cnf
 
 
 def main():
@@ -335,18 +344,12 @@ def main():
     
     knowledge_base.append(left_or_right)
 
-    # print(knowledge_base.var.name)
-    # print(convert_to_cnf(knowledge_base))
-    print("--Before:")
-    print_children(knowledge_base[1])
-    print("--After:")
-    eliminate_implication(knowledge_base[1])
-    move_negations_inside(knowledge_base[1])
-    standardize_variables(knowledge_base[1])
-    knowledge_base[1] = move_quantifiers_left(knowledge_base[1])
-    skolemization(knowledge_base[1])
-    knowledge_base[1] = drop_universal_quantifiers(knowledge_base[1])
-    print_children(knowledge_base[1])
+    cnf_clauses = convert_to_cnf(knowledge_base)
+
+    print("Knowledge Base:")
+    for sentence in cnf_clauses:
+        print("Sentence:")
+        print_children(sentence)
 
 
 
