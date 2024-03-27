@@ -3,27 +3,36 @@
 # Predicate
 # Atom
 
-class Quant:
-    def __init__(self, name , var, tree = []):
-        self.name = name
-        self.var = var
-        self.tree = tree
-    
-class Op:
+class Node:
+    '''
+    Types of Nodes:
+    1. Quantifier
+    2. Operation
+    3. Predicate
+    '''
     def __init__(self, name , var = None, tree = []):
         self.name = name
         self.var = var
         self.tree = tree
+        self.parent = None
+        self.type = None
 
-class Pred:
-    def __init__(self, name , var = None, tree = []):
-        self.name = name
-        self.var = var
-        self.tree = tree
+        # Determine the type of the node
+        if(self.name == '∀' or self.name == '∃'):
+            self.type = "Quant"
+        elif(self.name == '¬' or self.name == '∨' or self.name == '∧' or self.name == '→' or self.name == '↔'):
+            self.type = "Op"
+        else:
+            self.type = "Pred"
+        
+        # Set the parent of the tree
+        for branch in self.tree:
+            branch.parent = self
 
 class Atom:
     def __init__(self, name , is_constant = False):
         self.name = name
+        self.parent = None
         self.is_constant = is_constant
 
 
@@ -31,13 +40,13 @@ class Atom:
 def eliminate_implication(T):
     # traverse the tree
     for branch in T:
-        if type(branch) is Op:
+        if type(branch) == Node and branch.type == 'Op':
             if branch.name == "→":
                 branch.name = "∨"
-                branch.tree = [Op("¬",tree = [branch.tree[0]]),branch.tree[1]]
+                branch.tree = [Node("¬",tree = [branch.tree[0]]),branch.tree[1]]
             elif branch.name == "↔":
                 branch.name = "∧"
-                branch.tree = [Op("→",tree = [branch.tree[0],branch.tree[1]]),Op("→",tree = [branch.tree[1],branch.tree[0]])]
+                branch.tree = [Node("→",tree = [branch.tree[0],branch.tree[1]]),Node("→",tree = [branch.tree[1],branch.tree[0]])]
         
         if type(branch) is not Atom:
             eliminate_implication(branch.tree)
@@ -47,23 +56,23 @@ def eliminate_implication(T):
 def move_negations_inside(T, parent = None):
     # traverse the tree
     for branch in T:
-        if type(branch) is Op and branch.name == "¬":
+        if type(branch) == Node and branch.type == 'Op' and branch.name == "¬":
 
             # Operations
-            if type(branch.tree[0]) is Op:
+            if branch.tree[0].type == 'Op':
                 # De Morgan's Law for OR
                 if branch.tree[0].name == "∨":
                     branch.name = "∧"
                     next_tree = []
                     for b in branch.tree[0].tree:
-                        next_tree.append(Op("¬",tree = [b]))
+                        next_tree.append(Node("¬",tree = [b]))
                     branch.tree = next_tree
                 # De Morgan's Law for AND
                 elif branch.tree[0].name == "∧":
                     branch.name = "∨"
                     next_tree = []
                     for b in branch.tree[0].tree:
-                        next_tree.append(Op("¬",tree = [b]))
+                        next_tree.append(Node("¬",tree = [b]))
                     branch.tree = next_tree
                 # Double Negation
                 elif branch.tree[0].name == "¬":
@@ -71,7 +80,7 @@ def move_negations_inside(T, parent = None):
                     branch.tree = branch.tree[0].tree[0].tree
             
             # Quantifier
-            elif type(branch.tree[0]) is Quant:
+            elif branch.tree[0].type == 'Quant':
                 temp_name = branch.tree[0].name
                 temp_tree = branch.tree[0].tree 
                 temp_var = branch.tree[0].var
@@ -80,9 +89,9 @@ def move_negations_inside(T, parent = None):
                 else:
                     branch.name = "∀"
                 branch.var = temp_var
-                branch.tree = [[Op("¬",tree = temp_tree)]]
+                branch.tree = [[Node("¬",tree = temp_tree)]]
 
-        if type(branch) is not Atom:
+        if type(branch) !=  Atom:
             move_negations_inside(branch.tree,branch)
 
 
@@ -96,49 +105,58 @@ def move_quantifiers_left(T):
 def skolemization(T):
     pass
 # Drop universal quantifiers // Quant
-def drop_universal_quantifiers(T):
+def drop_universal_quantifiers(T,parent = None):
+    # if type(T) is Quant:
+    #     if T.name == "∀":
+    #         T.name = ""
+    #         T.var = None
+    #         T.tree = T.tree[0]
     pass
+
 # Convert to CNF using the distributive laws // Op
 def distribute(T):
     pass
 
-def convert_to_cnf(tree):
+def convert_to_cnf(T):
     
     pass
 
 
 def print_tree(tree):
     for branch in tree:
-        if type(branch) is Atom:
+        if type(branch) == Atom:
             print(branch.name , branch.is_constant)
-        elif type(branch) is Op:
-            print(branch.name)
-            print_tree(branch.tree)
-        elif type(branch) is Quant:
-            print(branch.name, branch.var.name)
-            print_tree(branch.tree)
-        elif type(branch) is Pred:
-            print(branch.name)
-            print_tree(branch.tree)
+        elif type(branch) == Node:
+            if branch.type == "Quant":
+                print(branch.name , branch.var.name)
+                print_tree(branch.tree)
+            elif branch.type == "Op":
+                print(branch.name)
+                print_tree(branch.tree)
+            else:
+                print(branch.name)
+                print_tree(branch.tree)
 
 def main():
     all_tree = []
 
     # Example: ∀x(¬(T(x) → ¬M(x)))
     x = Atom("x",False)
-    T = Pred("T",tree = [x])
-    M = Pred("M",tree = [x])
-    not_M = Op("¬",tree = [M])
+    T = Node("T",tree = [x])
+    M = Node("M",tree = [x])
+    not_M = Node("¬",tree = [M])
     
-    T_implies_not_M = Op("→",tree = [T,not_M])
+    T_implies_not_M = Node("→",tree = [T,not_M])
     
-    not_T_implies_not_M = Op("¬",tree = [T_implies_not_M])
-    all_tree.append(Quant("∀",x, tree = [not_T_implies_not_M]))
+    not_T_implies_not_M = Node("¬",tree = [T_implies_not_M])
+    first_sentence = Node("∀",x, tree = [not_T_implies_not_M])
+    all_tree.append(first_sentence)
     
     # print(all_tree.var.name)
     # print(convert_to_cnf(all_tree))
     eliminate_implication(all_tree[0].tree)
     move_negations_inside(all_tree[0].tree)
+    drop_universal_quantifiers(all_tree[0].tree)
     print_tree([all_tree[0]])
     # print_tree(all_tree)
 
