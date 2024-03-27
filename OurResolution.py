@@ -285,6 +285,8 @@ def generate_random_string(n):
 
 
 def print_children(root):
+    if(root == None):
+        return
     if type(root) == Atom:
         print(root.name, root.is_constant)
         return
@@ -311,5 +313,18 @@ def convert_to_cnf(KB):
         skolemization(sentence)
         sentence = drop_universal_quantifiers(sentence)
         distribute(sentence)
+        sentence = tree_to_clauses(sentence)
         cnf.append(sentence)
     return cnf
+
+
+def tree_to_clauses(sentence):
+    clauses = []
+    if sentence.name == "∧":
+        for child in sentence.children:
+            clauses.append(child)
+    else:
+        clauses.append(sentence)
+    
+    return clauses
+
