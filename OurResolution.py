@@ -328,3 +328,23 @@ def tree_to_clauses(sentence):
     
     return clauses
 
+def resolve(clause1, clause2):
+    resolved_clauses = []
+
+    for literal1 in clause1:
+        for literal2 in clause2:
+
+            if isinstance(literal1.children[0], Atom) and isinstance(literal2.children[0], Atom):
+                if literal1.name == literal2.name and literal1.is_constant != literal2.is_constant:
+                    new_clause = [copy.deepcopy(lit) for lit in clause1 + clause2 if lit != literal1 and lit != literal2]
+                    resolved_clauses.append(new_clause)
+
+    return resolved_clauses
+
+def resolution(knowledge_base):
+    new_clauses = []
+    for i, clause1 in enumerate(knowledge_base):
+        for j, clause2 in enumerate(knowledge_base):
+            if i != j:
+                new_clauses.extend(resolve(clause1, clause2))
+    return new_clauses
