@@ -186,8 +186,21 @@ def drop_universal_quantifiers(T, parent=None):
 # Convert to CNF using the distributive laws // Op
 
 
-def distribute(T):
-    pass
+def distribute(root):
+    if type(root) == Atom:
+        return
+    if root.name == 'V':
+        for i in range(len(root.children)):
+            if root.children[i].name == '∧':
+                temp = copy.deepcopy(root.children)
+                root.name = '∧'
+                root.children[0] = Node(
+                    "V", children=[temp[(i + 1) % 2], temp[i].children[0]])
+                root.children[1] = Node(
+                    "V", children=[temp[(i + 1) % 2], temp[i].children[1]])
+                break
+        for child in root.children:
+            distribute(child)
 
 
 def convert_to_cnf(T):
@@ -234,18 +247,18 @@ def main():
 
     # (∀x p(x)) v (∃x q(x))
 
-    x = Atom("x", False)
-    y = Atom("y", False)
+    # x = Atom("x", False)
+    # y = Atom("y", False)
 
-    P = Node("P", children=[x])
-    Q = Node("Q", children=[x])
-    left = Node("∀", x, children=[P])
-    right = Node("∧", children=[
-                 P, Node("Q", children=[y])])
-    right = Node("∃", y, children=[right])
-    right = Node("∃", x, children=[right])
-    left_or_right = Node("V", children=[left, right])
-    knowledge_base.append(left_or_right)
+    # P = Node("P", children=[x])
+    # Q = Node("Q", children=[x])
+    # left = Node("∀", x, children=[P])
+    # right = Node("∧", children=[
+    #              P, Node("Q", children=[y])])
+    # right = Node("∃", x, children=[right])
+    # right = Node("∃", y, children=[right])
+    # left_or_right = Node("V", children=[left, right])
+    # knowledge_base.append(left_or_right)
 
     # print(knowledge_base.var.name)
     # print(convert_to_cnf(knowledge_base))
@@ -258,6 +271,21 @@ def main():
     # drop_universal_quantifiers(knowledge_base[0])
     # print_children([knowledge_base[0]])
     # print_children(knowledge_base)
+    x = Atom("x", False)
+    y = Atom("y", False)
+    z = Atom("z", False)
+    P = Node("P", children=[x])
+    Q = Node("Q", children=[y])
+    U = Node("U", children=[z])
+
+    # Define conjunction Q(y) ^ U(z)
+    conjunction = Node("∧", children=[Q, U])
+
+    # Define disjunction P(x) v (Q(y) ^ U(z))
+    disjunction = Node("V", children=[P, conjunction])
+    distribute(disjunction)
+    # Print the tree structure
+    print_children(disjunction)
 
 
 # Run
