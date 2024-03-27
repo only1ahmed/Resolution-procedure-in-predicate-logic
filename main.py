@@ -214,6 +214,7 @@ def skolemization(root):
     
     universal_flag = False
     list_of_variables = set()
+    # Replacing the EXIST's variables with either constants or skolem functions
     for i in range(len(list_of_quantifiers)):
         if list_of_quantifiers[i].name == "∀":
             list_of_variables.add(list_of_quantifiers[i].var.name)
@@ -235,17 +236,26 @@ def skolemization(root):
                 CONSTANT_NO_NAME += 1
                 root = replace_atom_with(root, list_of_quantifiers[i].var, new_constant_atom)
 
+    # Deleting all EXIST Quants
+    for q in list_of_quantifiers:
+        if q.name == "∃":
+            par = q.parent
+            par.children.append(q.children[0])
+            par.children.remove(q)
 
 # Drop universal quantifiers // Quant
+def drop_universal_quantifiers(root):
+    if type(root) == Atom:
+        return root
+    if root.type == "Quant" and root.name == "∀":
+        return drop_universal_quantifiers(root.children[0])
+    for i in range(len(root.children)):
+        root.children[i] = drop_universal_quantifiers(root.children[i])
+    return root
 
 
-def drop_universal_quantifiers(root, parent=None):
-    # if type(T) is Quant:
-    #     if T.name == "∀":
-    #         T.name = ""
-    #         T.var = None
-    #         T.children = T.children[0]
-    pass
+
+        
 
 # Convert to CNF using the distributive laws // Op
 
@@ -322,12 +332,16 @@ def main():
 
     # print(knowledge_base.var.name)
     # print(convert_to_cnf(knowledge_base))
-    eliminate_implication(knowledge_base[1])
-    move_negations_inside(knowledge_base[1])
-    standardize_variables(knowledge_base[1])
-    knowledge_base[1] = move_quantifiers_left(knowledge_base[1])
-    skolemization(knowledge_base[1])
-    print_children(knowledge_base[1])
+    print("--Before:")
+    print_children(knowledge_base[0])
+    print("--After:")
+    eliminate_implication(knowledge_base[0])
+    move_negations_inside(knowledge_base[0])
+    standardize_variables(knowledge_base[0])
+    knowledge_base[0] = move_quantifiers_left(knowledge_base[0])
+    skolemization(knowledge_base[0])
+    knowledge_base[0] = drop_universal_quantifiers(knowledge_base[0])
+    print_children(knowledge_base[0])
 
 
 
