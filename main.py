@@ -33,15 +33,22 @@ class Node:
         else:
             self.type = "Pred"
 
+        self.setParent()
+
+    def setParent(self):
         # Set the parent of the children
         for branch in self.children:
-            branch.parent = self
+            if type(branch) == Atom:
+                branch.parents.append(self)
+            else:
+                branch.parent = self
+        
 
 
 class Atom:
     def __init__(self, name, is_constant=False):
         self.name = name
-        self.parent = None
+        self.parents = []
         self.is_constant = is_constant
 
 
@@ -131,11 +138,35 @@ def standardize_variables(root, new_atom=None, old_atom=None):
 
 # Move all quantifiers to the left // Quant
 
+def collect_quantifiers(root, list_of_quantifiers):
+    if type(root) == Atom:
+        return
+    if root.type == "Quant":
+        list_of_quantifiers.append(root)
+    for branch in root.children:
+        collect_quantifiers(branch, list_of_quantifiers)
 
 def move_quantifiers_left(root):
-    T = root.children
+    list_of_quantifiers = [] 
+    collect_quantifiers(root, list_of_quantifiers)
+    
+    for q in list_of_quantifiers:
+        cur_par = q.parent
+        cur_children = q.children
+        while cur_par.type == 'Quant':
+            cur_par = cur_par.parent
+        cur_par.children.remove(q)
+        cur_par.children = cur_par.children + cur_children
+    
+    list_of_quantifiers.reverse()
+    new_root = root
+    for q in list_of_quantifiers:
+        new_root = Node(q.name, q.var, [new_root])
+        
+    return new_root
+    
 
-    pass
+
 # Skolemization // Quant
 
 
@@ -175,9 +206,10 @@ def print_children(root):
     elif root.type == "Quant":
         print(root.name, root.var.name)
     elif root.type == "Pred":
-        print(root.name)
+        print(root.name, end=" ")
         for branch in root.children:
-            print(branch.name)
+            print(branch.name , end=" ")
+        print()
     else:
         print(root.name)
     for branch in root.children:
@@ -220,7 +252,9 @@ def main():
     eliminate_implication(knowledge_base[1])
     move_negations_inside(knowledge_base[1])
     standardize_variables(knowledge_base[1])
-    print_children(left_or_right)
+    knowledge_base[1] = move_quantifiers_left(knowledge_base[1])
+    print_children(knowledge_base[1])
+    # print_children(left_or_right)
     # drop_universal_quantifiers(knowledge_base[0])
     # print_children([knowledge_base[0]])
     # print_children(knowledge_base)
