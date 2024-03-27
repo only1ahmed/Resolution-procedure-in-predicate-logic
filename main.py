@@ -95,9 +95,11 @@ def move_negations_inside(root, parent=None):
                         next_children.append(Node("¬", children=[b]))
                     branch.children = next_children
                 # Double Negation
-                elif branch.children[0].name == "¬":
+                elif branch.name == "¬":
                     branch.name = branch.children[0].children[0].name
                     branch.children = branch.children[0].children[0].children
+                    branch.type = 'Pred'     
+                    branch.setParent()
 
             # Quantifier
             elif branch.children[0].type == 'Quant':
@@ -110,9 +112,10 @@ def move_negations_inside(root, parent=None):
                     branch.name = "∀"
                 branch.var = temp_var
                 branch.children = [[Node("¬", children=temp_children)]]
+                branch.setParent()
 
         if type(branch) != Atom:
-            move_negations_inside(branch, branch)
+            move_negations_inside(branch, root)
 
 
 # Standardize variables // Quant
@@ -153,6 +156,9 @@ def move_quantifiers_left(root):
     for q in list_of_quantifiers:
         cur_par = q.parent
         cur_children = q.children
+        # skips the quantifier if it is already on the top
+        if(cur_par == None):
+            continue
         while cur_par.type == 'Quant':
             cur_par = cur_par.parent
         cur_par.children.remove(q)
@@ -304,6 +310,7 @@ def print_children(root):
             print_children(branch)
 
 
+
 def main():
     knowledge_base = []
 
@@ -313,18 +320,16 @@ def main():
     T = Node("T", children=[x])
     M = Node("M", children=[x])
     not_M = Node("¬", children=[M])
-
     T_implies_not_M = Node("→", children=[T, not_M])
-
     not_T_implies_not_M = Node("¬", children=[T_implies_not_M])
     first_sentence = Node("∀", x, children=[not_T_implies_not_M])
+
     knowledge_base.append(first_sentence)
 
     # (∀x p(x)) v (∃x q(x))
     x = Atom("x", False)
     P = Node("P", children=[x])
     Q = Node("Q", children=[x])
-
     left_or_right = Node("V", children=[Node("∀", x, children=[P]), Node("∃", x, children=[Q])])
 
     
@@ -333,15 +338,15 @@ def main():
     # print(knowledge_base.var.name)
     # print(convert_to_cnf(knowledge_base))
     print("--Before:")
-    print_children(knowledge_base[0])
+    print_children(knowledge_base[1])
     print("--After:")
-    eliminate_implication(knowledge_base[0])
-    move_negations_inside(knowledge_base[0])
-    standardize_variables(knowledge_base[0])
-    knowledge_base[0] = move_quantifiers_left(knowledge_base[0])
-    skolemization(knowledge_base[0])
-    knowledge_base[0] = drop_universal_quantifiers(knowledge_base[0])
-    print_children(knowledge_base[0])
+    eliminate_implication(knowledge_base[1])
+    move_negations_inside(knowledge_base[1])
+    standardize_variables(knowledge_base[1])
+    knowledge_base[1] = move_quantifiers_left(knowledge_base[1])
+    skolemization(knowledge_base[1])
+    knowledge_base[1] = drop_universal_quantifiers(knowledge_base[1])
+    print_children(knowledge_base[1])
 
 
 
