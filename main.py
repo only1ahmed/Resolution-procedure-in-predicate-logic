@@ -197,11 +197,11 @@ def replace_atom_with(root, atom, constant):
     return root
 
 
+CONSTANT_NO_NAME = 0
+CONSTANT_PREDICATE = 0
 # Skolemization // Quant
 def skolemization(root):
-    CONSTANT_NO_NAME = 0
-    CONSTANT_PREDICATE = 0
-
+    global CONSTANT_NO_NAME , CONSTANT_PREDICATE
     set_all_parents(root)
     
     list_of_atoms = []
@@ -222,9 +222,9 @@ def skolemization(root):
         if universal_flag:
             if list_of_quantifiers[i].name == "∃":
                 new_atoms = []
-                for atom in list_of_atoms:
-                    if atom.name not in list_of_variables:
-                        new_atoms.append(Atom(atom.name, False))
+                for atom_name in list_of_variables:
+                    new_atoms.append(Atom(atom_name, False))
+                    
                 new_predicate = Node('F'+ str(CONSTANT_PREDICATE), children=new_atoms)
                 CONSTANT_PREDICATE += 1
                 root = replace_atom_with(root, list_of_quantifiers[i].var, new_predicate)
@@ -281,12 +281,12 @@ def print_children(root):
         print(root.name, root.is_constant)
         return
     elif root.type == "Quant":
-        print(root.name, root.var.name)
+        print(root.name,'(', root.var.name,')')
     elif root.type == "Pred":
-        print(root.name, end=" ")
+        print(root.name, end=" ( ")
         for branch in root.children:
-            print(branch.name , end=" ")
-        print()
+            print(branch.name , end="")
+        print(' )')
     else:
         print(root.name)
     for branch in root.children:
