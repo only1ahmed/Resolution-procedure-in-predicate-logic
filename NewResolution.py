@@ -417,13 +417,9 @@ def resolution(knowledge_base):
     while True:
         new_clauses = []
         for i in range(len(clauses)):
-            for j in range(i+1, len(clauses)):
-                resolvents = resolve(clauses[i], clauses[j])
-                if len(resolvents) == 0:
-                    return True
-                new_clauses.append(resolvents)
-        if new_clauses in clauses:
-            return False
-        clauses += new_clauses
+            for j in range(i + 1, len(clauses)):
+                clause1 = clauses[i]
+                clause2 = clauses[j]
+                resolved_clause = resolve(clause1, clause2)
 
                 

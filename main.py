@@ -37,7 +37,8 @@ def main():
     print("CNF Clauses:")
     for clause in cnf_clauses:
         print("================")
-        print_children(clause[0])
+        print_clause(clause)
+
 
     print("Resolution:")
     print(resolution(cnf_clauses))
